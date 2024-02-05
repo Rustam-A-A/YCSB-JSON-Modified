@@ -597,7 +597,7 @@ public class CoreWorkload extends Workload {
         if (fieldkey.equals("field7")) {
           data = new StringByteIterator(buildCategoryField(key, fieldkey));
         } else if(fieldkey.equals("field8")) {
-          data = new StringByteIterator(buildRandomRate(key, fieldkey));
+          data = new StringByteIterator(buildRandomRate(2));
         } else if(fieldkey.equals("field4")) {
           data = new StringByteIterator(buildRandomLongitude(-112.320, -111.880));
         } else if(fieldkey.equals("field5")) {
@@ -647,13 +647,12 @@ public class CoreWorkload extends Workload {
   /**
    * Build a rate field.
    */
-  private String buildRandomRate(String key, String fieldkey) {
+  private String buildRandomRate(int minRate) {
     String rateInString;
     int size = 31;
-    int minRate = 2;
     float [] rates = new float[size];
     for (int i = 0; i < size; i++) {
-      rates[i] = 1 + (float)i/10;
+      rates[i] = minRate + (float)i/10;
     }
     int randomElement = (int)(Math.random() * size);
     rateInString = Float.toString(rates[randomElement]);

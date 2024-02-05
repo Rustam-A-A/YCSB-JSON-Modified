@@ -136,9 +136,11 @@ public class PostgreNoSQLDBClient extends DB {
 
   @Override
   public Status read(String tableName, String key, Set<String> fields, Map<String, ByteIterator> result) {
+    StatementType type = new StatementType(StatementType.Type.READ, tableName, fields);
+    PreparedStatement readStatement = cachedStatements.get(type);
     try {
-      StatementType type = new StatementType(StatementType.Type.READ, tableName, fields);
-      PreparedStatement readStatement = cachedStatements.get(type);
+//      StatementType type = new StatementType(StatementType.Type.READ, tableName, fields);
+//      PreparedStatement readStatement = cachedStatements.get(type);
       if (readStatement == null) {
         readStatement = createAndCacheReadStatement(type);
       }
@@ -164,10 +166,12 @@ public class PostgreNoSQLDBClient extends DB {
         }
       }
       resultSet.close();
+      LOG.info("read: {}", key);
       return Status.OK;
 
     } catch (SQLException e) {
       LOG.error("Error in processing read of table " + tableName + ": " + e);
+      LOG.error(readStatement.toString());
       return Status.ERROR;
     }
   }
@@ -175,13 +179,16 @@ public class PostgreNoSQLDBClient extends DB {
   @Override
   public Status scan(String tableName, String startKey, int recordcount, Set<String> fields,
                      Vector<HashMap<String, ByteIterator>> result) {
+    StatementType type = new StatementType(StatementType.Type.SCAN, tableName, fields);
+    PreparedStatement scanStatement = cachedStatements.get(type);
     try {
-      StatementType type = new StatementType(StatementType.Type.SCAN, tableName, fields);
-      PreparedStatement scanStatement = cachedStatements.get(type);
+//      StatementType type = new StatementType(StatementType.Type.SCAN, tableName, fields);
+//      PreparedStatement scanStatement = cachedStatements.get(type);
       if (scanStatement == null) {
         scanStatement = createAndCacheScanStatement(type);
       }
-      scanStatement.setString(1, startKey);
+//      scanStatement.setString(1, startKey);
+      scanStatement.setFloat(1, 4);
       scanStatement.setInt(2, recordcount);
       ResultSet resultSet = scanStatement.executeQuery();
       for (int i = 0; i < recordcount && resultSet.next(); i++) {
@@ -206,18 +213,19 @@ public class PostgreNoSQLDBClient extends DB {
 
   @Override
   public Status update(String tableName, String key, Map<String, ByteIterator> values) {
+    StatementType type = new StatementType(StatementType.Type.UPDATE, tableName, null);
+    PreparedStatement updateStatement = cachedStatements.get(type);
     try{
-      StatementType type = new StatementType(StatementType.Type.UPDATE, tableName, null);
-      PreparedStatement updateStatement = cachedStatements.get(type);
+//      StatementType type = new StatementType(StatementType.Type.UPDATE, tableName, null);
+//      PreparedStatement updateStatement = cachedStatements.get(type);
       if (updateStatement == null) {
         updateStatement = createAndCacheUpdateStatement(type);
       }
 
       JSONObject jsonObject = new JSONObject();
-      for (Map.Entry<String, ByteIterator> entry : values.entrySet()) {
-//        jsonObject.put(entry.getKey(), entry.getValue().toString());
-        jsonObject.put(entry.getKey(), "THIS IS AN OBJECT TO PUT ");
-      }
+
+      //minimum rate value of 5 has been set to differ original value from updated one
+      jsonObject.put("stars", Float.parseFloat(buildRandomRate(5)));
 
       PGobject object = new PGobject();
       object.setType("jsonb");
@@ -228,20 +236,41 @@ public class PostgreNoSQLDBClient extends DB {
 
       int result = updateStatement.executeUpdate();
       if (result == 1) {
+        LOG.info("updated: {}", key);
         return Status.OK;
       }
       return Status.UNEXPECTED_STATE;
     } catch (SQLException e) {
       LOG.error("Error in processing update to table: " + tableName + e);
+      LOG.error(updateStatement.toString());
       return Status.ERROR;
     }
   }
 
+
+  /**
+   * Build a rate field.
+   */
+  private String buildRandomRate(int minRate) {
+    String rateInString;
+    int size = 31;
+    float [] rates = new float[size];
+    for (int i = 0; i < size; i++) {
+      rates[i] = minRate + (float)i/10;
+    }
+    int randomElement = (int)(Math.random() * size);
+    rateInString = Float.toString(rates[randomElement]);
+    return rateInString;
+  }
+
+
   @Override
   public Status insert(String tableName, String key, Map<String, ByteIterator> values) {
+    StatementType type = new StatementType(StatementType.Type.INSERT, tableName, null);
+    PreparedStatement insertStatement = cachedStatements.get(type);
     try{
-      StatementType type = new StatementType(StatementType.Type.INSERT, tableName, null);
-      PreparedStatement insertStatement = cachedStatements.get(type);
+//      StatementType type = new StatementType(StatementType.Type.INSERT, tableName, null);
+//      PreparedStatement insertStatement = cachedStatements.get(type);
       if (insertStatement == null) {
         insertStatement = createAndCacheInsertStatement(type);
       }
@@ -292,12 +321,14 @@ public class PostgreNoSQLDBClient extends DB {
 
       int result = insertStatement.executeUpdate();
       if (result == 1) {
+        LOG.info("inserted: {}", key);
         return Status.OK;
       }
 
       return Status.UNEXPECTED_STATE;
     } catch (SQLException e) {
       LOG.error("Error in processing insert to table: " + tableName + ": " + e);
+      LOG.error(insertStatement.toString());
       return Status.ERROR;
     }
   }
@@ -375,12 +406,13 @@ public class PostgreNoSQLDBClient extends DB {
 
   private PreparedStatement createAndCacheReadStatement(StatementType readType)
       throws SQLException{
-    PreparedStatement readStatement = connection.prepareStatement(createReadStatement(readType));
-    PreparedStatement statement = cachedStatements.putIfAbsent(readType, readStatement);
-    if (statement == null) {
-      return readStatement;
-    }
-    return statement;
+//    PreparedStatement readStatement = connection.prepareStatement(createReadStatement(readType));
+//    PreparedStatement statement = cachedStatements.putIfAbsent(readType, readStatement);
+//    if (statement == null) {
+//      return readStatement;
+//    }
+//    return statement;
+    return connection.prepareStatement(createReadStatement(readType));
   }
 
   private String createReadStatement(StatementType readType){
@@ -404,12 +436,12 @@ public class PostgreNoSQLDBClient extends DB {
 
   private PreparedStatement createAndCacheScanStatement(StatementType scanType)
       throws SQLException{
-    PreparedStatement scanStatement = connection.prepareStatement(createScanStatement(scanType));
-    PreparedStatement statement = cachedStatements.putIfAbsent(scanType, scanStatement);
-    if (statement == null) {
-      return scanStatement;
-    }
-    return statement;
+//    PreparedStatement scanStatement = connection.prepareStatement(createScanStatement(scanType));
+//    PreparedStatement statement = cachedStatements.putIfAbsent(scanType, scanStatement);
+//    if (statement == null) {
+//      return scanStatement;
+//    }
+    return connection.prepareStatement(createScanStatement(scanType));
   }
 
   private String createScanStatement(StatementType scanType){
@@ -421,7 +453,8 @@ public class PostgreNoSQLDBClient extends DB {
     }
     scan.append(" FROM " + scanType.getTableName());
     scan.append(" WHERE ");
-    scan.append(PRIMARY_KEY);
+//    scan.append(PRIMARY_KEY);
+    scan.append("(ycsb_value->'stars')::float");
     scan.append(" >= ?");
     scan.append(" ORDER BY ");
     scan.append(PRIMARY_KEY);
@@ -432,12 +465,13 @@ public class PostgreNoSQLDBClient extends DB {
 
   public PreparedStatement createAndCacheUpdateStatement(StatementType updateType)
       throws SQLException{
-    PreparedStatement updateStatement = connection.prepareStatement(createUpdateStatement(updateType));
-    PreparedStatement statement = cachedStatements.putIfAbsent(updateType, updateStatement);
-    if (statement == null) {
-      return updateStatement;
-    }
-    return statement;
+//    PreparedStatement updateStatement = connection.prepareStatement(createUpdateStatement(updateType));
+//    PreparedStatement statement = cachedStatements.putIfAbsent(updateType, updateStatement);
+//    if (statement == null) {
+//      return updateStatement;
+//    }
+//    return statement;
+    return connection.prepareStatement(createUpdateStatement(updateType));
   }
 
   private String createUpdateStatement(StatementType updateType){
@@ -454,12 +488,13 @@ public class PostgreNoSQLDBClient extends DB {
 
   private PreparedStatement createAndCacheInsertStatement(StatementType insertType)
       throws SQLException{
-    PreparedStatement insertStatement = connection.prepareStatement(createInsertStatement(insertType));
-    PreparedStatement statement = cachedStatements.putIfAbsent(insertType, insertStatement);
-    if (statement == null) {
-      return insertStatement;
-    }
-    return statement;
+//    PreparedStatement insertStatement = connection.prepareStatement(createInsertStatement(insertType));
+//    PreparedStatement statement = cachedStatements.putIfAbsent(insertType, insertStatement);
+//    if (statement == null) {
+//      return insertStatement;
+//    }
+//    return statement;
+    return connection.prepareStatement(createInsertStatement(insertType));
   }
 
   private String createInsertStatement(StatementType insertType){

@@ -43,18 +43,10 @@ import site.ycsb.DB;
 import site.ycsb.DBException;
 import site.ycsb.Status;
 
-import org.json.simple.JSONObject;
 
 import org.bson.Document;
 import org.bson.types.Binary;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.Vector;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -263,39 +255,24 @@ public class MongoDbClient extends DB {
         if (entry.getKey().equals("field0")) {
           toInsert.put("full_address", entry.getValue().toArray());
         } else if (entry.getKey().equals("field1"))  {
-          JSONObject hours = new JSONObject();
-
-          JSONObject monday = new JSONObject();
-          monday.put("open", "18:00");
-          monday.put("close", "20:00");
-          JSONObject tuesday = new JSONObject();
-          tuesday.put("open", "13:00");
-          tuesday.put("close", "20:00");
-          JSONObject wednesday = new JSONObject();
-          wednesday.put("open", "8:00");
-          wednesday.put("close", "15:00");
-          JSONObject thursday = new JSONObject();
-          thursday.put("open", "10:00");
-          thursday.put("close", "22:00");
-
-          hours.put("monday", monday);
-          hours.put("tuesday", tuesday);
-          hours.put("wednesday", wednesday);
-          hours.put("thursday", thursday);
-
-
-
-          toInsert.put("hours", hours.toJSONString());
+          Document hours = getHours();
+          toInsert.put("hours", hours);
         } else if (entry.getKey().equals("field2"))  {
-          toInsert.put("city", entry.getValue().toArray());
+          toInsert.put("city", "Phoenix");
         } else if (entry.getKey().equals("field3")) {
           toInsert.put("review_count", 4);
+        } else if (entry.getKey().equals("field4")) {
+          toInsert.put("longitude", Double.parseDouble("122.3333333333"));
+        } else if (entry.getKey().equals("field7")) {
+          toInsert.put("categories", buildCategoryField());
+        } else if (entry.getKey().equals("field8")) {
+          toInsert.put("stars", buildRandomRate(2));
         } else {
           toInsert.put(entry.getKey(), entry.getValue().toArray());
         }
 
-//        toInsert.put(entry.getKey(), entry.getValue().toArray());
-
+        Document attributes = getAttributes();
+        toInsert.put("attributes", attributes);
 
       }
 
@@ -337,6 +314,75 @@ public class MongoDbClient extends DB {
       return Status.ERROR;
     }
 
+  }
+
+  private static Document getAttributes() {
+    Random randomBoolean = new Random();
+    Document parking = new Document();
+    parking.put("garage", randomBoolean.nextBoolean());
+    parking.put("street", randomBoolean.nextBoolean());
+    parking.put("validated", randomBoolean.nextBoolean());
+    parking.put("lot", randomBoolean.nextBoolean());
+    parking.put("valet", randomBoolean.nextBoolean());
+    Document attributes = new Document();
+    attributes.put("Parking", parking);
+    attributes.put("Price range", 1);
+    return attributes;
+  }
+
+  private String buildCategoryField() {
+
+    String [] categories = new String[] {"Restaurant", "Bar", "Cafe", "Women's Clothing",
+        "Fashion", "Shopping", "Home & Garten", "Furniture Stores", "Drugstores",
+        "Food", "Convenience Stores", "Beauty & Spas", "Cosmetic & Beauty Supply", "Sports Wear"};
+    int size = categories.length;
+    int randomElement = (int)(Math.random() * size);
+    return categories[randomElement];
+  }
+
+  private float buildRandomRate(int minRate) {
+    int size = 31;
+    float [] rates = new float[size];
+    float tmp;
+    for (int i = 0; i < size; i++) {
+      tmp = (minRate * 10 + i);
+      rates[i] = (float) Math.round(tmp) /10;
+    }
+    int randomElement = (int)(Math.random() * size);
+    return rates[randomElement];
+  }
+
+  private static Document getHours() {
+    Document hours = new Document();
+    Document monday = new Document();
+    monday.put("open", "18:00");
+    monday.put("close", "20:00");
+    Document tuesday = new Document();
+    tuesday.put("open", "13:00");
+    tuesday.put("close", "20:00");
+    Document wednesday = new Document();
+    wednesday.put("open", "8:00");
+    wednesday.put("close", "15:00");
+    Document thursday = new Document();
+    thursday.put("open", "10:00");
+    thursday.put("close", "22:00");
+    Document friday = new Document();
+    friday.put("open", "10:00");
+    friday.put("close", "22:00");
+    Document saturday = new Document();
+    saturday.put("open", "10:00");
+    saturday.put("close", "22:00");
+    Document sunday = new Document();
+    sunday.put("open", "10:00");
+    sunday.put("close", "22:00");
+    hours.put("monday", monday);
+    hours.put("tuesday", tuesday);
+    hours.put("wednesday", wednesday);
+    hours.put("thursday", thursday);
+    hours.put("friday", friday);
+    hours.put("saturday", saturday);
+    hours.put("sunday", sunday);
+    return hours;
   }
 
   /**
