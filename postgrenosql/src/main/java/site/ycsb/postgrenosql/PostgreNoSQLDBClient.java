@@ -303,6 +303,9 @@ public class PostgreNoSQLDBClient extends DB {
         } else if(entry.getKey().equals("field8")) {
           jsonObject.put("stars", Float.parseFloat(entry.getValue().toString()));
 
+        } else if(entry.getKey().equals("field9")) {
+          jsonObject.put("business_id", entry.getValue().toString());
+
         } else {
           jsonObject.put(entry.getKey(), entry.getValue().toString());
         }

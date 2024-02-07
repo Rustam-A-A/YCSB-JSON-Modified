@@ -9,9 +9,6 @@ import java.util.List;
 public class Hours {
   private List<Day> days;
 
-  public Hours(List<Day> days1) {
-    this.days = days1;
-  }
 
   public Hours() {
   }

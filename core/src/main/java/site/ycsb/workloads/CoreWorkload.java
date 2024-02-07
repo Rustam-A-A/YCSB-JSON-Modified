@@ -361,10 +361,13 @@ public class CoreWorkload extends Workload {
   public static final String FIELD_NAME_PREFIX_DEFAULT = "field";
 
   protected NumberGenerator keysequence;
+  protected NumberGenerator entitysequence;
   protected DiscreteGenerator operationchooser;
   protected NumberGenerator keychooser;
+  protected NumberGenerator entitychooser;
   protected NumberGenerator fieldchooser;
   protected AcknowledgedCounterGenerator transactioninsertkeysequence;
+  protected AcknowledgedCounterGenerator transactioninsertentitysequence;
   protected NumberGenerator scanlength;
   protected boolean orderedinserts;
   protected long fieldcount;
@@ -382,6 +385,19 @@ public class CoreWorkload extends Workload {
     String value = Long.toString(keynum);
     int fill = zeropadding - value.length();
     String prekey = "user";
+    for (int i = 0; i < fill; i++) {
+      prekey += '0';
+    }
+    return prekey + value;
+  }
+
+  public static String buildEntityName(long keynum, int zeropadding, boolean orderedinserts) {
+    if (!orderedinserts) {
+      keynum = Utils.hash(keynum);
+    }
+    String value = Long.toString(keynum);
+    int fill = zeropadding - value.length();
+    String prekey = "Entity";
     for (int i = 0; i < fill; i++) {
       prekey += '0';
     }
@@ -498,9 +514,11 @@ public class CoreWorkload extends Workload {
     }
 
     keysequence = new CounterGenerator(insertstart);
+    entitysequence = new CounterGenerator(insertstart);
     operationchooser = createOperationGenerator(p);
 
     transactioninsertkeysequence = new AcknowledgedCounterGenerator(recordcount);
+    transactioninsertentitysequence = new AcknowledgedCounterGenerator(recordcount);
     if (requestdistrib.compareTo("uniform") == 0) {
       keychooser = new UniformLongGenerator(insertstart, insertstart + insertcount - 1);
     } else if (requestdistrib.compareTo("exponential") == 0) {
@@ -529,14 +547,18 @@ public class CoreWorkload extends Workload {
       int expectednewkeys = (int) ((opcount) * insertproportion * 2.0); // 2 is fudge factor
 
       keychooser = new ScrambledZipfianGenerator(insertstart, insertstart + insertcount + expectednewkeys);
+      entitychooser = new ScrambledZipfianGenerator(insertstart, insertstart + insertcount + expectednewkeys);
     } else if (requestdistrib.compareTo("latest") == 0) {
       keychooser = new SkewedLatestGenerator(transactioninsertkeysequence);
+      entitychooser = new SkewedLatestGenerator(transactioninsertentitysequence);
     } else if (requestdistrib.equals("hotspot")) {
       double hotsetfraction =
           Double.parseDouble(p.getProperty(HOTSPOT_DATA_FRACTION, HOTSPOT_DATA_FRACTION_DEFAULT));
       double hotopnfraction =
           Double.parseDouble(p.getProperty(HOTSPOT_OPN_FRACTION, HOTSPOT_OPN_FRACTION_DEFAULT));
       keychooser = new HotspotIntegerGenerator(insertstart, insertstart + insertcount - 1,
+          hotsetfraction, hotopnfraction);
+      entitychooser = new HotspotIntegerGenerator(insertstart, insertstart + insertcount - 1,
           hotsetfraction, hotopnfraction);
     } else {
       throw new WorkloadException("Unknown request distribution \"" + requestdistrib + "\"");
@@ -602,6 +624,9 @@ public class CoreWorkload extends Workload {
           data = new StringByteIterator(buildRandomLongitude(-112.320, -111.880));
         } else if(fieldkey.equals("field5")) {
           data = new StringByteIterator(buildRandomLatitude(33.238572, 33.938572));
+        } else if(fieldkey.equals("field9")) {
+          int entitynum = entitysequence.nextValue().intValue();
+          data = new StringByteIterator(buildEntityName(entitynum, zeropadding, orderedinserts));
         } else {
           data = new RandomByteIterator(fieldlengthgenerator.nextValue().longValue());
         }
@@ -799,6 +824,20 @@ public class CoreWorkload extends Workload {
     return keynum;
   }
 
+  long nextEntitynum() {
+    long keynum;
+    if (entitychooser instanceof ExponentialGenerator) {
+      do {
+        keynum = transactioninsertentitysequence.lastValue() - entitychooser.nextValue().intValue();
+      } while (keynum < 0);
+    } else {
+      do {
+        keynum =entitychooser.nextValue().intValue();
+      } while (keynum > transactioninsertentitysequence.lastValue());
+    }
+    return keynum;
+  }
+
   public void doTransactionRead(DB db) {
     // choose a random key
     long keynum = nextKeynum();
@@ -810,6 +849,9 @@ public class CoreWorkload extends Workload {
     if (!readallfields) {
       // read a random field
       String fieldname = fieldnames.get(fieldchooser.nextValue().intValue());
+
+      System.out.println("THIS FIELD WAS CHOSEN RANDOMLY: " + fieldname);
+      System.err.println("THIS FIELD WAS CHOSEN RANDOMLY: " + fieldname);
 
       fields = new HashSet<String>();
       fields.add(fieldname);
