@@ -840,6 +840,39 @@ public class CoreWorkload extends Workload {
 
   public void doTransactionRead(DB db) {
     // choose a random key
+    long keynum = nextEntitynum();
+
+    String entityname = CoreWorkload.buildEntityName(keynum, zeropadding, orderedinserts);
+
+    HashSet<String> fields = null;
+
+    //to do: not clear how to use HashSet fields!
+
+    if (!readallfields) {
+      // read a random field
+      String fieldname = fieldnames.get(fieldchooser.nextValue().intValue());
+
+      System.out.println("THIS FIELD WAS CHOSEN RANDOMLY: " + fieldname);
+      System.err.println("THIS FIELD WAS CHOSEN RANDOMLY: " + fieldname);
+
+      fields = new HashSet<String>();
+      fields.add(fieldname);
+    } else if (dataintegrity || readallfieldsbyname) {
+      // pass the full field list if dataintegrity is on for verification
+      fields = new HashSet<String>(fieldnames);
+    }
+
+    HashMap<String, ByteIterator> cells = new HashMap<String, ByteIterator>();
+    db.read(table, entityname, fields, cells);
+
+    if (dataintegrity) {
+      verifyRow(entityname, cells);
+    }
+  }
+
+  /*
+  public void doTransactionRead(DB db) {
+    // choose a random key
     long keynum = nextKeynum();
 
     String keyname = CoreWorkload.buildKeyName(keynum, zeropadding, orderedinserts);
@@ -867,6 +900,7 @@ public class CoreWorkload extends Workload {
       verifyRow(keyname, cells);
     }
   }
+  */
 
   public void doTransactionReadModifyWrite(DB db) {
     // choose a random key

@@ -72,6 +72,9 @@ public class PostgreNoSQLDBClient extends DB {
   /** The primary key in the user table. */
   public static final String PRIMARY_KEY = "YCSB_KEY";
 
+  /** The element entity in the document. */
+  public static final String BUSINESS_ID = "field9";
+
   /** The field name prefix in the table. */
   public static final String COLUMN_NAME = "YCSB_VALUE";
 
@@ -135,16 +138,14 @@ public class PostgreNoSQLDBClient extends DB {
   }
 
   @Override
-  public Status read(String tableName, String key, Set<String> fields, Map<String, ByteIterator> result) {
+  public Status read(String tableName, String entity, Set<String> fields, Map<String, ByteIterator> result) {
     StatementType type = new StatementType(StatementType.Type.READ, tableName, fields);
     PreparedStatement readStatement = cachedStatements.get(type);
     try {
-//      StatementType type = new StatementType(StatementType.Type.READ, tableName, fields);
-//      PreparedStatement readStatement = cachedStatements.get(type);
       if (readStatement == null) {
         readStatement = createAndCacheReadStatement(type);
       }
-      readStatement.setString(1, key);
+      readStatement.setString(1, entity);
       ResultSet resultSet = readStatement.executeQuery();
       if (!resultSet.next()) {
         resultSet.close();
@@ -166,7 +167,7 @@ public class PostgreNoSQLDBClient extends DB {
         }
       }
       resultSet.close();
-      LOG.info("read: {}", key);
+      LOG.info("read: {}", entity);
       return Status.OK;
 
     } catch (SQLException e) {
@@ -304,7 +305,8 @@ public class PostgreNoSQLDBClient extends DB {
           jsonObject.put("stars", Float.parseFloat(entry.getValue().toString()));
 
         } else if(entry.getKey().equals("field9")) {
-          jsonObject.put("business_id", entry.getValue().toString());
+          jsonObject.put("field9", entry.getValue().toString());
+//          jsonObject.put("field9", entry.getValue());
 
         } else {
           jsonObject.put(entry.getKey(), entry.getValue().toString());
@@ -431,11 +433,39 @@ public class PostgreNoSQLDBClient extends DB {
 
     read.append(" FROM " + readType.getTableName());
     read.append(" WHERE ");
+    read.append(COLUMN_NAME);
+    read.append("->>");
+    read.append("'");
+    read.append(BUSINESS_ID);
+    read.append("'");
+    read.append(" = ");
+    read.append("?");
+    return read.toString();
+  }
+
+
+
+  /*
+  private String createReadStatement(StatementType readType){
+    StringBuilder read = new StringBuilder("SELECT " + PRIMARY_KEY + " AS " + PRIMARY_KEY);
+
+    if (readType.getFields() == null) {
+      read.append(", (jsonb_each_text(" + COLUMN_NAME + ")).*");
+    } else {
+      for (String field:readType.getFields()){
+        read.append(", " + COLUMN_NAME + "->>'" + field + "' AS " + field);
+      }
+    }
+
+    read.append(" FROM " + readType.getTableName());
+    read.append(" WHERE ");
     read.append(PRIMARY_KEY);
     read.append(" = ");
     read.append("?");
     return read.toString();
   }
+*/
+
 
   private PreparedStatement createAndCacheScanStatement(StatementType scanType)
       throws SQLException{
