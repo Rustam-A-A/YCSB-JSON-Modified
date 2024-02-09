@@ -196,6 +196,54 @@ public class BasicDB extends DB {
   }
 
   /**
+   * Perform a range scan for a set of records in the database. Each field/value pair from the result will be stored
+   * in a HashMap.
+   *
+   * @param table The name of the table
+   * @param startLongitude The longitude of the first record to read
+   * @param startLatitude The latitude of the first record to read
+   * @param recordcount The number of records to read
+   * @param fields The list of fields to read, or null for all of them
+   * @param result A Vector of HashMaps, where each HashMap is a set field/value pairs for one record
+   * @return The result of the operation.
+   */
+  public Status scanCoordinates(String table, double  startLongitude, double startLatitude, int recordcount,
+                                         Set<String> fields, Vector<HashMap<String, ByteIterator>> result) {
+
+    delay();
+
+    // not clear what to do with startkey. so i took one possible value of it as a temporary solution:
+    String startkey = "user6284781860667377211";
+
+
+    if (verbose) {
+      StringBuilder sb = getStringBuilder();
+      sb.append("SCAN ").append(table).append(" ").append(startkey).append(" ").append(recordcount).append(" [ ");
+      if (fields != null) {
+        for (String f : fields) {
+          sb.append(f).append(" ");
+        }
+      } else {
+        sb.append("<all fields>");
+      }
+
+      sb.append("]");
+      System.out.println(sb);
+    }
+
+    if (count) {
+      incCounter(scans, hash(table, startkey, fields));
+    }
+
+    return Status.OK;
+
+
+  }
+
+
+
+
+  /**
    * Update a record in the database. Any field/value pairs in the specified values HashMap will be written into the
    * record with the specified record key, overwriting any existing values with the same field name.
    *

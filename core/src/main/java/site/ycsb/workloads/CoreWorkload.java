@@ -186,6 +186,32 @@ public class CoreWorkload extends Workload {
 
   protected boolean writeallfields;
 
+
+  /**
+   * The minimal value of the longitude.
+   */
+  public static final double MINIMAL_VALUE_OF_LONGITUDE = -112.320;
+
+  /**
+   * The maximal value of the longitude.
+   */
+  public static final double MAXIMAL_VALUE_OF_LONGITUDE = -111.880;
+
+  /**
+   * The minimal value of the latitude.
+   */
+  public static final double MINIMAL_VALUE_OF_LATITUDE = 33.238572;
+
+  /**
+   * The minimal value of the latitude.
+   */
+  public static final double MAXIMAL_VALUE_OF_LATITUDE = 33.938572;
+
+
+
+
+
+
   /**
    * The name of the property for deciding whether to check all returned
    * data against the formation template to ensure data integrity.
@@ -621,9 +647,9 @@ public class CoreWorkload extends Workload {
         } else if(fieldkey.equals("field8")) {
           data = new StringByteIterator(buildRandomRate(2));
         } else if(fieldkey.equals("field4")) {
-          data = new StringByteIterator(buildRandomLongitude(-112.320, -111.880));
+          data = new StringByteIterator(buildRandomLongitude(MINIMAL_VALUE_OF_LONGITUDE, MAXIMAL_VALUE_OF_LONGITUDE));
         } else if(fieldkey.equals("field5")) {
-          data = new StringByteIterator(buildRandomLatitude(33.238572, 33.938572));
+          data = new StringByteIterator(buildRandomLatitude(MINIMAL_VALUE_OF_LATITUDE, MAXIMAL_VALUE_OF_LATITUDE));
         } else if(fieldkey.equals("field9")) {
           int entitynum = entitysequence.nextValue().intValue();
           data = new StringByteIterator(buildEntityName(entitynum, zeropadding, orderedinserts));
@@ -951,6 +977,29 @@ public class CoreWorkload extends Workload {
 
   public void doTransactionScan(DB db) {
     // choose a random key
+
+    double latitude = Double.parseDouble(buildRandomLatitude(MINIMAL_VALUE_OF_LATITUDE, MAXIMAL_VALUE_OF_LATITUDE));
+    double longitude = Double.parseDouble(buildRandomLongitude(MINIMAL_VALUE_OF_LONGITUDE, MAXIMAL_VALUE_OF_LONGITUDE));
+    
+    // choose a random scan length
+    int len = scanlength.nextValue().intValue();
+
+    HashSet<String> fields = null;
+
+    if (!readallfields) {
+      // read a random field
+      String fieldname = fieldnames.get(fieldchooser.nextValue().intValue());
+
+      fields = new HashSet<String>();
+      fields.add(fieldname);
+    }
+
+    db.scanCoordinates(table, longitude, latitude,  len, fields, new Vector<HashMap<String, ByteIterator>>());
+  }
+
+/*
+  public void doTransactionScan(DB db) {
+    // choose a random key
     long keynum = nextKeynum();
 
     String startkeyname = CoreWorkload.buildKeyName(keynum, zeropadding, orderedinserts);
@@ -970,6 +1019,7 @@ public class CoreWorkload extends Workload {
 
     db.scan(table, startkeyname, len, fields, new Vector<HashMap<String, ByteIterator>>());
   }
+  */
 
   public void doTransactionUpdate(DB db) {
     // choose a random key

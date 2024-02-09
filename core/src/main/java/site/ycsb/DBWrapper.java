@@ -170,6 +170,44 @@ public class DBWrapper extends DB {
     }
   }
 
+
+  /**
+   * Perform a range scan for a set of records in the database. Each field/value pair from the result will be stored
+   * in a HashMap.
+   *
+   * @param table The name of the table
+   * @param startLongitude The longitude of the first record to read
+   * @param startLatitude The latitude of the first record to read
+   * @param recordcount The number of records to read
+   * @param fields The list of fields to read, or null for all of them
+   * @param result A Vector of HashMaps, where each HashMap is a set field/value pairs for one record
+   * @return The result of the operation.
+   */
+  public Status scanCoordinates(String table, double  startLongitude, double startLatitude, int recordcount,
+                                         Set<String> fields, Vector<HashMap<String, ByteIterator>> result) {
+
+    try (final TraceScope span = tracer.newScope(scopeStringScan)) {
+      long ist = measurements.getIntendedStartTimeNs();
+      long st = System.nanoTime();
+//      Status res = db.scan(table, startkey, recordcount, fields, result);
+      Status res = db.scanCoordinates(table, startLongitude, startLatitude, recordcount, fields, result);
+      long en = System.nanoTime();
+      measure("SCAN", res, ist, st, en);
+      measurements.reportStatus("SCAN", res);
+      return res;
+    }
+
+
+
+
+  }
+
+
+
+
+
+
+
   private void measure(String op, Status result, long intendedStartTimeNanos,
                        long startTimeNanos, long endTimeNanos) {
     String measurementName = op;

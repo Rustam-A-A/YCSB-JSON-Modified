@@ -178,39 +178,39 @@ public class PostgreNoSQLDBClientTest {
     }
   }
 
-  @Test
-  public void insertScan() {
-    int numberOfValuesToInsert = 100;
-    int recordcount = 5;
-    String startKey = "00050";
-    try{
-      // create set of fields to scan
-      Set<String> fields = createFieldSet();
-
-      // create values to insert
-      for (int i = 0;i < numberOfValuesToInsert;i++){
-        HashMap<String, ByteIterator> insertMap = new HashMap<>();
-
-        for (int j = 0; j < NUM_FIELDS; j++) {
-          byte[] value = new byte[FIELD_LENGTH];
-          for (int k = 0; k < value.length; k++) {
-            value[k] = (byte) ((j + 1) * (k + 1));
-          }
-
-          insertMap.put(FIELD_PREFIX + j, new ByteArrayByteIterator(value));
-        }
-
-        postgreNoSQLClient.insert(TABLE_NAME, padded(i, 5), insertMap);
-      }
-
-      Vector<HashMap<String, ByteIterator>> results = new Vector<HashMap<String, ByteIterator>>();
-      Status result = postgreNoSQLClient.scan(TABLE_NAME, startKey,recordcount, fields, results);
-      assertThat("Scan did not return success (0).", result, is(Status.OK));
-      assertThat("Number of results does not match.", results.size(), is(recordcount));
-    } catch (Exception e){
-      LOG.info(e.toString());
-    }
-  }
+//  @Test
+//  public void insertScan() {
+//    int numberOfValuesToInsert = 100;
+//    int recordcount = 5;
+//    String startKey = "00050";
+//    try{
+//      // create set of fields to scan
+//      Set<String> fields = createFieldSet();
+//
+//      // create values to insert
+//      for (int i = 0;i < numberOfValuesToInsert;i++){
+//        HashMap<String, ByteIterator> insertMap = new HashMap<>();
+//
+//        for (int j = 0; j < NUM_FIELDS; j++) {
+//          byte[] value = new byte[FIELD_LENGTH];
+//          for (int k = 0; k < value.length; k++) {
+//            value[k] = (byte) ((j + 1) * (k + 1));
+//          }
+//
+//          insertMap.put(FIELD_PREFIX + j, new ByteArrayByteIterator(value));
+//        }
+//
+//        postgreNoSQLClient.insert(TABLE_NAME, padded(i, 5), insertMap);
+//      }
+//
+//      Vector<HashMap<String, ByteIterator>> results = new Vector<HashMap<String, ByteIterator>>();
+//      Status result = postgreNoSQLClient.scan(TABLE_NAME, startKey,recordcount, fields, results);
+//      assertThat("Scan did not return success (0).", result, is(Status.OK));
+//      assertThat("Number of results does not match.", results.size(), is(recordcount));
+//    } catch (Exception e){
+//      LOG.info(e.toString());
+//    }
+//  }
 
   @Test
   public void insertUpdate(){

@@ -216,8 +216,9 @@ LICENSE file.
    <module>tarantool</module>
    <module>tablestore</module>
    <module>voltdb</module>
-   -->
+
    <module>zookeeper</module>
+   -->
  </modules>
 
  <build>

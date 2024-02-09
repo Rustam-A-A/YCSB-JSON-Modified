@@ -80,6 +80,13 @@ public class PostgreNoSQLDBClient extends DB {
 
   private static final String DEFAULT_PROP = "";
 
+  /** The range in direction longitude. */
+  public static final double LONGITUDE_RANGE = 0.02;
+
+  /** The range in direction latitude. */
+  public static final double LATITUDE_RANGE = 0.02;
+
+
   /** Returns parsed boolean value from the properties if set, otherwise returns defaultVal. */
   private static boolean getBoolProperty(Properties props, String key, boolean defaultVal) {
     String valueStr = props.getProperty(key);
@@ -177,19 +184,62 @@ public class PostgreNoSQLDBClient extends DB {
     }
   }
 
+
+  @Override
+  public Status scanCoordinates(String table, double  startLongitude, double startLatitude, int recordcount,
+                                               Set<String> fields, Vector<HashMap<String, ByteIterator>> result) {
+
+    StatementType type = new StatementType(StatementType.Type.SCAN, table, fields);
+    PreparedStatement scanStatement = cachedStatements.get(type);
+
+    double endLongitude = startLongitude + LONGITUDE_RANGE;
+    double endLatitude = startLongitude + LATITUDE_RANGE;
+
+    try {
+      if (scanStatement == null) {
+        scanStatement = createAndCacheScanStatement(type);
+      }
+
+      scanStatement.setDouble(1, startLongitude);
+      scanStatement.setDouble(2, endLongitude);
+      scanStatement.setDouble(3, startLatitude);
+      scanStatement.setDouble(4, endLatitude);
+      scanStatement.setInt(5, recordcount);
+      ResultSet resultSet = scanStatement.executeQuery();
+      for (int i = 0; i < recordcount && resultSet.next(); i++) {
+        if (result != null && fields != null) {
+          HashMap<String, ByteIterator> values = new HashMap<String, ByteIterator>();
+          for (String field : fields) {
+            String value = resultSet.getString(field);
+            values.put(field, new StringByteIterator(value));
+          }
+
+          result.add(values);
+        }
+      }
+
+      resultSet.close();
+      return Status.OK;
+    } catch (SQLException e) {
+      LOG.error("Error in processing scan of table: " + table + ": " + e);
+      return Status.ERROR;
+    }
+
+  }
+
+
+
+
   @Override
   public Status scan(String tableName, String startKey, int recordcount, Set<String> fields,
                      Vector<HashMap<String, ByteIterator>> result) {
     StatementType type = new StatementType(StatementType.Type.SCAN, tableName, fields);
     PreparedStatement scanStatement = cachedStatements.get(type);
     try {
-//      StatementType type = new StatementType(StatementType.Type.SCAN, tableName, fields);
-//      PreparedStatement scanStatement = cachedStatements.get(type);
       if (scanStatement == null) {
         scanStatement = createAndCacheScanStatement(type);
       }
-//      scanStatement.setString(1, startKey);
-      scanStatement.setFloat(1, 4);
+      scanStatement.setString(1, startKey);
       scanStatement.setInt(2, recordcount);
       ResultSet resultSet = scanStatement.executeQuery();
       for (int i = 0; i < recordcount && resultSet.next(); i++) {
@@ -217,8 +267,6 @@ public class PostgreNoSQLDBClient extends DB {
     StatementType type = new StatementType(StatementType.Type.UPDATE, tableName, null);
     PreparedStatement updateStatement = cachedStatements.get(type);
     try{
-//      StatementType type = new StatementType(StatementType.Type.UPDATE, tableName, null);
-//      PreparedStatement updateStatement = cachedStatements.get(type);
       if (updateStatement == null) {
         updateStatement = createAndCacheUpdateStatement(type);
       }
@@ -270,8 +318,6 @@ public class PostgreNoSQLDBClient extends DB {
     StatementType type = new StatementType(StatementType.Type.INSERT, tableName, null);
     PreparedStatement insertStatement = cachedStatements.get(type);
     try{
-//      StatementType type = new StatementType(StatementType.Type.INSERT, tableName, null);
-//      PreparedStatement insertStatement = cachedStatements.get(type);
       if (insertStatement == null) {
         insertStatement = createAndCacheInsertStatement(type);
       }
@@ -411,12 +457,6 @@ public class PostgreNoSQLDBClient extends DB {
 
   private PreparedStatement createAndCacheReadStatement(StatementType readType)
       throws SQLException{
-//    PreparedStatement readStatement = connection.prepareStatement(createReadStatement(readType));
-//    PreparedStatement statement = cachedStatements.putIfAbsent(readType, readStatement);
-//    if (statement == null) {
-//      return readStatement;
-//    }
-//    return statement;
     return connection.prepareStatement(createReadStatement(readType));
   }
 
@@ -469,15 +509,11 @@ public class PostgreNoSQLDBClient extends DB {
 
   private PreparedStatement createAndCacheScanStatement(StatementType scanType)
       throws SQLException{
-//    PreparedStatement scanStatement = connection.prepareStatement(createScanStatement(scanType));
-//    PreparedStatement statement = cachedStatements.putIfAbsent(scanType, scanStatement);
-//    if (statement == null) {
-//      return scanStatement;
-//    }
     return connection.prepareStatement(createScanStatement(scanType));
   }
 
   private String createScanStatement(StatementType scanType){
+
     StringBuilder scan = new StringBuilder("SELECT " + PRIMARY_KEY + " AS " + PRIMARY_KEY);
     if (scanType.getFields() != null){
       for (String field:scanType.getFields()){
@@ -486,9 +522,17 @@ public class PostgreNoSQLDBClient extends DB {
     }
     scan.append(" FROM " + scanType.getTableName());
     scan.append(" WHERE ");
-//    scan.append(PRIMARY_KEY);
-    scan.append("(ycsb_value->'stars')::float");
+    scan.append("(ycsb_value->'longitude')::float");
     scan.append(" >= ?");
+    scan.append(" and ");
+    scan.append("(ycsb_value->'longitude')::float");
+    scan.append(" < ?");
+    scan.append(" and ");
+    scan.append("(ycsb_value->'latitude')::float");
+    scan.append(" >= ?");
+    scan.append(" and ");
+    scan.append("(ycsb_value->'latitude')::float");
+    scan.append(" < ?");
     scan.append(" ORDER BY ");
     scan.append(PRIMARY_KEY);
     scan.append(" LIMIT ?");
@@ -496,14 +540,31 @@ public class PostgreNoSQLDBClient extends DB {
     return scan.toString();
   }
 
+//  private String createScanStatement(StatementType scanType){
+//
+//    StringBuilder scan = new StringBuilder("SELECT " + PRIMARY_KEY + " AS " + PRIMARY_KEY);
+//    if (scanType.getFields() != null){
+//      for (String field:scanType.getFields()){
+//        scan.append(", " + COLUMN_NAME + "->>'" + field + "' AS " + field);
+//      }
+//    }
+//    scan.append(" FROM " + scanType.getTableName());
+//    scan.append(" WHERE ");
+//    scan.append("(ycsb_value->'stars')::float");
+//    scan.append(" >= ?");
+//    scan.append(" ORDER BY ");
+//    scan.append(PRIMARY_KEY);
+//    scan.append(" LIMIT ?");
+//
+//    return scan.toString();
+//  }
+
+
+
+
+
   public PreparedStatement createAndCacheUpdateStatement(StatementType updateType)
       throws SQLException{
-//    PreparedStatement updateStatement = connection.prepareStatement(createUpdateStatement(updateType));
-//    PreparedStatement statement = cachedStatements.putIfAbsent(updateType, updateStatement);
-//    if (statement == null) {
-//      return updateStatement;
-//    }
-//    return statement;
     return connection.prepareStatement(createUpdateStatement(updateType));
   }
 
@@ -521,12 +582,6 @@ public class PostgreNoSQLDBClient extends DB {
 
   private PreparedStatement createAndCacheInsertStatement(StatementType insertType)
       throws SQLException{
-//    PreparedStatement insertStatement = connection.prepareStatement(createInsertStatement(insertType));
-//    PreparedStatement statement = cachedStatements.putIfAbsent(insertType, insertStatement);
-//    if (statement == null) {
-//      return insertStatement;
-//    }
-//    return statement;
     return connection.prepareStatement(createInsertStatement(insertType));
   }
 
@@ -556,4 +611,7 @@ public class PostgreNoSQLDBClient extends DB {
     delete.append(" = ?");
     return delete.toString();
   }
+
+
+
 }

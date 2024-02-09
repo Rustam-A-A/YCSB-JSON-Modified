@@ -532,6 +532,16 @@ public class TestTimeSeriesWorkload {
       return Status.OK;
     }
 
+
+    @Override
+    public Status scanCoordinates(String table, double  startLongitude, double startLatitude, int recordcount,
+                    Set<String> fields, Vector<HashMap<String, ByteIterator>> result) {
+      // TODO Auto-generated method stub
+      return Status.OK;
+    }
+
+
+
     @Override
     public Status update(String table, String key,
         Map<String, ByteIterator> values) {
