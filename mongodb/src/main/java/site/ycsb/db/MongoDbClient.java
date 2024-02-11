@@ -32,11 +32,13 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.InsertManyOptions;
 import com.mongodb.client.model.UpdateOneModel;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
+import org.bson.conversions.Bson;
 import site.ycsb.ByteArrayByteIterator;
 import site.ycsb.ByteIterator;
 import site.ycsb.DB;
@@ -104,6 +106,12 @@ public class MongoDbClient extends DB {
 
   /** The bulk inserts pending for the thread. */
   private final List<Document> bulkInserts = new ArrayList<Document>();
+
+  /** The range in direction longitude. */
+  public static final double LONGITUDE_RANGE = 0.02;
+
+  /** The range in direction latitude. */
+  public static final double LATITUDE_RANGE = 0.02;
 
   /**
    * Cleanup any state for this DB. Called once per DB instance; there is one DB
@@ -258,11 +266,13 @@ public class MongoDbClient extends DB {
           Document hours = getHours();
           toInsert.put("hours", hours);
         } else if (entry.getKey().equals("field2"))  {
-          toInsert.put("city", "Phoenix");
+          toInsert.append("city", "Phoenix");
         } else if (entry.getKey().equals("field3")) {
-          toInsert.put("review_count", 4);
+          toInsert.append("review_count", 4);
         } else if (entry.getKey().equals("field4")) {
-          toInsert.put("longitude", Double.parseDouble("122.3333333333"));
+          toInsert.put("longitude", Double.parseDouble(entry.getValue().toString()));
+        } else if (entry.getKey().equals("field5")) {
+          toInsert.put("latitude", Double.parseDouble(entry.getValue().toString()));
         } else if (entry.getKey().equals("field7")) {
           toInsert.put("categories", buildCategoryField());
         } else if (entry.getKey().equals("field8")) {
@@ -404,7 +414,13 @@ public class MongoDbClient extends DB {
       Map<String, ByteIterator> result) {
     try {
       MongoCollection<Document> collection = database.getCollection(table);
-      Document query = new Document("_id", key);
+//      Document query = new Document("_id", key);
+      Document query = new Document("attributes.Parking.garage" , true);
+
+
+      //db.usertable.find({"categories" : "Sports Wear", "attributes.Parking.garage" : true})
+
+
 
       FindIterable<Document> findIterable = collection.find(query);
 
@@ -449,13 +465,16 @@ public class MongoDbClient extends DB {
   @Override
   public Status scan(String table, String startkey, int recordcount,
       Set<String> fields, Vector<HashMap<String, ByteIterator>> result) {
+
     MongoCursor<Document> cursor = null;
+
     try {
       MongoCollection<Document> collection = database.getCollection(table);
 
       Document scanRange = new Document("$gte", startkey);
       Document query = new Document("_id", scanRange);
       Document sort = new Document("_id", INCLUDE);
+
 
       FindIterable<Document> findIterable =
           collection.find(query).sort(sort).limit(recordcount);
@@ -497,6 +516,102 @@ public class MongoDbClient extends DB {
       }
     }
   }
+
+  @Override
+  public  Status scanCoordinates(String table, double  startLongitude, double startLatitude, int recordcount,
+                                         Set<String> fields, Vector<HashMap<String, ByteIterator>> result) {
+
+    MongoCursor<Document> cursor = null;
+
+//    String startkey = "user3343336125528896926";
+//    String endkey = "user8752645209624771860";
+//    String startkey = "user8752645209624771860";
+//    String endkey = "user3343336125528896926";
+
+
+    double endLongitude = startLongitude + LONGITUDE_RANGE;
+    double endLatitude = startLatitude + LATITUDE_RANGE;
+
+
+
+    try {
+      MongoCollection<Document> collection = database.getCollection(table);
+
+
+//      Document scanRangeModified = new Document(and(lt("_id", endkey), gt("_id", startkey)));
+
+//      Document scanRange = new Document("$gte", startkey);
+//
+//      Document scanRange2 = new Document("$lt", endkey);
+
+//      Document query = new Document("_id", scanRange);
+//      Document query2 = new Document("_id", scanRange2);
+
+//      Document query = new Document("attributes.Parking.garage", true);
+//      Document query2 = new Document("attributes.Parking.street", true);
+
+
+
+
+      Document sort = new Document("_id", INCLUDE);
+
+//      FindIterable <Document> findIterable = collection.find(Filters.lt("gte", startkey)).sort(sort)
+//      .limit(recordcount);
+
+      Bson longitudeQuery = Filters.and(Filters.gte("longitude", startLongitude),
+          Filters.lt("longitude", endLongitude));
+      Bson latitudeQuery = Filters.and(Filters.gte("latitude", startLatitude),
+          Filters.lt("latitude", endLatitude));
+
+//      FindIterable <Document> findIterable = collection.find(longitudeQuery).sort(sort).limit(recordcount);
+//      FindIterable <Document> findIterable = collection.find(latitudeQuery).sort(sort).limit(recordcount);
+      FindIterable <Document> findIterable = collection.find(
+          Filters.and(longitudeQuery, latitudeQuery)).sort(sort).limit(recordcount);
+
+//      FindIterable <Document> findIterable = collection.find(Filters.and(Filters.gte("longitude", startLongitude),
+//          Filters.lt("longitude", endLongitude))).sort(sort).limit(recordcount);
+
+//      FindIterable<Document> findIterable =
+//          collection.find(Filters.and(query2, query)).sort(sort).limit(recordcount);
+
+      if (fields != null) {
+        Document projection = new Document();
+        for (String fieldName : fields) {
+          projection.put(fieldName, INCLUDE);
+        }
+        findIterable.projection(projection);
+      }
+
+      cursor = findIterable.iterator();
+
+      if (!cursor.hasNext()) {
+        System.err.println("Nothing found in scan for coordinates: (" + startLongitude + ", " + startLatitude +")");
+        return Status.ERROR;
+      }
+
+      result.ensureCapacity(recordcount);
+
+      while (cursor.hasNext()) {
+        HashMap<String, ByteIterator> resultMap =
+            new HashMap<String, ByteIterator>();
+
+        Document obj = cursor.next();
+        fillMap(resultMap, obj);
+
+        result.add(resultMap);
+      }
+
+      return Status.OK;
+    } catch (Exception e) {
+      System.err.println(e.toString());
+      return Status.ERROR;
+    } finally {
+      if (cursor != null) {
+        cursor.close();
+      }
+    }
+  }
+
 
   /**
    * Update a record in the database. Any field/value pairs in the specified

@@ -434,6 +434,13 @@ public class AsyncMongoDbClient extends DB {
     }
   }
 
+  @Override
+  public  Status scanCoordinates(String table, double  startLongitude, double startLatitude, int recordcount,
+                                         Set<String> fields, Vector<HashMap<String, ByteIterator>> result) {
+    return Status.ERROR;
+  }
+
+
   /**
    * Update a record in the database. Any field/value pairs in the specified
    * values HashMap will be written into the record with the specified record
