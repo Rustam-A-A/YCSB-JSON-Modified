@@ -83,6 +83,28 @@ public class MongoDbClient extends DB {
   /** The database name to access. */
   private static MongoDatabase database;
 
+
+  /**
+   * The yelp database name to access.
+   */
+  private static String yelpDatabaseName = "test";
+
+  /** The database name to access. */
+  private static MongoDatabase yelpDatabase;
+
+  /** The iterator to work with original collection. */
+  private static Iterator<Document> iterator;
+
+  /** The original yelp collection name. */
+  private static String yelpCollectionName = "myCollection";
+
+  /** The original yelp collection name. */
+  private static MongoCollection<Document> yelpCollection;
+
+
+
+
+
   /**
    * Count the number of times initialized to teardown on the last
    * {@link #cleanup()}.
@@ -227,6 +249,11 @@ public class MongoDbClient extends DB {
                 .withReadPreference(readPreference)
                 .withWriteConcern(writeConcern);
 
+        yelpDatabase = mongoClient.getDatabase(yelpDatabaseName);
+        yelpCollection = yelpDatabase.getCollection(yelpCollectionName);
+        iterator = yelpCollection.find().iterator();
+
+
         System.out.println("mongo client connection created with " + url);
       } catch (Exception e1) {
         System.err
@@ -257,34 +284,43 @@ public class MongoDbClient extends DB {
       Map<String, ByteIterator> values) {
     try {
       MongoCollection<Document> collection = database.getCollection(table);
-      Document toInsert = new Document("_id", key);
-      for (Map.Entry<String, ByteIterator> entry : values.entrySet()) {
 
-        if (entry.getKey().equals("field0")) {
-          toInsert.put("full_address", entry.getValue().toArray());
-        } else if (entry.getKey().equals("field1"))  {
-          Document hours = getHours();
-          toInsert.put("hours", hours);
-        } else if (entry.getKey().equals("field2"))  {
-          toInsert.append("city", "Phoenix");
-        } else if (entry.getKey().equals("field3")) {
-          toInsert.append("review_count", 4);
-        } else if (entry.getKey().equals("field4")) {
-          toInsert.put("longitude", Double.parseDouble(entry.getValue().toString()));
-        } else if (entry.getKey().equals("field5")) {
-          toInsert.put("latitude", Double.parseDouble(entry.getValue().toString()));
-        } else if (entry.getKey().equals("field7")) {
-          toInsert.put("categories", buildCategoryField());
-        } else if (entry.getKey().equals("field8")) {
-          toInsert.put("stars", buildRandomRate(2));
-        } else {
-          toInsert.put(entry.getKey(), entry.getValue().toArray());
-        }
+      Document toInsert = (Document) iterator.next();
+      System.out.println(toInsert.toString());
+      toInsert.remove("_id");
+      toInsert.append("_id", key);
 
-        Document attributes = getAttributes();
-        toInsert.put("attributes", attributes);
 
-      }
+
+
+//      Document toInsert = new Document("_id", key);
+//      for (Map.Entry<String, ByteIterator> entry : values.entrySet()) {
+//
+//        if (entry.getKey().equals("field0")) {
+//          toInsert.put("full_address", entry.getValue().toArray());
+//        } else if (entry.getKey().equals("field1"))  {
+//          Document hours = getHours();
+//          toInsert.put("hours", hours);
+//        } else if (entry.getKey().equals("field2"))  {
+//          toInsert.append("city", "Phoenix");
+//        } else if (entry.getKey().equals("field3")) {
+//          toInsert.append("review_count", 4);
+//        } else if (entry.getKey().equals("field4")) {
+//          toInsert.put("longitude", Double.parseDouble(entry.getValue().toString()));
+//        } else if (entry.getKey().equals("field5")) {
+//          toInsert.put("latitude", Double.parseDouble(entry.getValue().toString()));
+//        } else if (entry.getKey().equals("field7")) {
+//          toInsert.put("categories", buildCategoryField());
+//        } else if (entry.getKey().equals("field8")) {
+//          toInsert.put("stars", buildRandomRate(2));
+//        } else {
+//          toInsert.put(entry.getKey(), entry.getValue().toArray());
+//        }
+//
+//        Document attributes = getAttributes();
+//        toInsert.put("attributes", attributes);
+//
+//      }
 
       if (batchSize == 1) {
         if (useUpsert) {
