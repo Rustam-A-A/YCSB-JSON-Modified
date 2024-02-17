@@ -559,12 +559,6 @@ public class MongoDbClient extends DB {
 
     MongoCursor<Document> cursor = null;
 
-//    String startkey = "user3343336125528896926";
-//    String endkey = "user8752645209624771860";
-//    String startkey = "user8752645209624771860";
-//    String endkey = "user3343336125528896926";
-
-
     double endLongitude = startLongitude + LONGITUDE_RANGE;
     double endLatitude = startLatitude + LATITUDE_RANGE;
 

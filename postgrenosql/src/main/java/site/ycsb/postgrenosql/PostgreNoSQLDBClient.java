@@ -18,6 +18,13 @@
  */
 package site.ycsb.postgrenosql;
 
+
+import com.mongodb.MongoClient;
+import com.mongodb.MongoClientURI;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCursor;
+import com.mongodb.client.MongoDatabase;
+import org.bson.Document;
 import site.ycsb.*;
 import org.json.simple.JSONObject;
 import org.postgresql.Driver;
@@ -87,6 +94,25 @@ public class PostgreNoSQLDBClient extends DB {
   public static final double LATITUDE_RANGE = 0.02;
 
 
+  /**
+   * The yelp database name to access.
+   */
+  private static String yelpDatabaseName = "test";
+
+  /** The database name to access. */
+  private static MongoDatabase yelpDatabase;
+
+  /** The iterator to work with original collection. */
+  private static MongoCursor<Document> iterator;
+
+  /** The original yelp collection name. */
+  private static String yelpCollectionName = "myCollection";
+
+  /** The original yelp collection name. */
+  private static MongoCollection<org.bson.Document> yelpCollection;
+
+
+
   /** Returns parsed boolean value from the properties if set, otherwise returns defaultVal. */
   private static boolean getBoolProperty(Properties props, String key, boolean defaultVal) {
     String valueStr = props.getProperty(key);
@@ -109,6 +135,31 @@ public class PostgreNoSQLDBClient extends DB {
       String user = props.getProperty(CONNECTION_USER, DEFAULT_PROP);
       String passwd = props.getProperty(CONNECTION_PASSWD, DEFAULT_PROP);
       boolean autoCommit = getBoolProperty(props, JDBC_AUTO_COMMIT, true);
+
+
+      MongoClient mongoClient;
+      String mongoUrl = "mongodb://localhost:27017/ycsb?w=1";
+
+      try {
+        MongoClientURI mongoUri = new MongoClientURI(mongoUrl);
+
+        mongoClient = new MongoClient(mongoUri);
+        yelpDatabase = mongoClient.getDatabase(yelpDatabaseName);
+        yelpCollection = yelpDatabase.getCollection(yelpCollectionName);
+        iterator = yelpCollection.find().iterator();
+
+        System.out.println("mongo client connection created with " + mongoUrl);
+      } catch (Exception e1) {
+        System.err
+            .println("Could not initialize MongoDB connection pool for Loader: "
+                + e1.toString());
+        e1.printStackTrace();
+        return;
+      }
+
+
+
+
 
       try {
         Properties tmpProps = new Properties();
@@ -322,50 +373,64 @@ public class PostgreNoSQLDBClient extends DB {
         insertStatement = createAndCacheInsertStatement(type);
       }
 
-      JSONObject jsonObject = new JSONObject();
+      Document toInsert = (Document) iterator.next();
+      toInsert.remove("_id");
+      Document attributes = (Document) toInsert.get("attributes");
 
       for (Map.Entry<String, ByteIterator> entry : values.entrySet()) {
-        if (entry.getKey().equals("field0")) {
-
-          jsonObject.put("full_address", entry.getValue().toString());
-
-        } else if(entry.getKey().equals("field1")) {
-
-          JSONObject hours = getHours();
-
-          jsonObject.put("hours", hours);
-
-        } else if(entry.getKey().equals("field2")) {
-          jsonObject.put("city", "Phoenix");
-
-        } else if(entry.getKey().equals("field3")) {
-          jsonObject.put("review_count", 4);
-
-        }  else if(entry.getKey().equals("field4")) {
-          jsonObject.put("longitude", Double.parseDouble(entry.getValue().toString()));
-
-        }  else if(entry.getKey().equals("field5")) {
-          jsonObject.put("latitude", Double.parseDouble(entry.getValue().toString()));
-
-        } else if(entry.getKey().equals("field8")) {
-          jsonObject.put("stars", Float.parseFloat(entry.getValue().toString()));
-
-        } else if(entry.getKey().equals("field9")) {
-          jsonObject.put("field9", entry.getValue().toString());
-//          jsonObject.put("field9", entry.getValue());
-
-        } else {
-          jsonObject.put(entry.getKey(), entry.getValue().toString());
+        if(entry.getKey().equals("field9")) {
+          attributes.append("abstract", entry.getValue().toString());
         }
-        JSONObject attributes = getAttributes();
-        jsonObject.put("attributes", attributes);
-
       }
+      toInsert.put("attributes", attributes);
+
+
+
+//
+//          JSONObject jsonObject = new JSONObject();
+//
+//      for (Map.Entry<String, ByteIterator> entry : values.entrySet()) {
+//        if (entry.getKey().equals("field0")) {
+//
+//          jsonObject.put("full_address", entry.getValue().toString());
+//
+//        } else if(entry.getKey().equals("field1")) {
+//
+//          JSONObject hours = getHours();
+//
+//          jsonObject.put("hours", hours);
+//
+//        } else if(entry.getKey().equals("field2")) {
+//          jsonObject.put("city", "Phoenix");
+//
+//        } else if(entry.getKey().equals("field3")) {
+//          jsonObject.put("review_count", 4);
+//
+//        }  else if(entry.getKey().equals("field4")) {
+//          jsonObject.put("longitude", Double.parseDouble(entry.getValue().toString()));
+//
+//        }  else if(entry.getKey().equals("field5")) {
+//          jsonObject.put("latitude", Double.parseDouble(entry.getValue().toString()));
+//
+//        } else if(entry.getKey().equals("field8")) {
+//          jsonObject.put("stars", Float.parseFloat(entry.getValue().toString()));
+//
+//        } else if(entry.getKey().equals("field9")) {
+//          jsonObject.put("field9", entry.getValue().toString());
+////          jsonObject.put("field9", entry.getValue());
+//
+//        } else {
+//          jsonObject.put(entry.getKey(), entry.getValue().toString());
+//        }
+//        JSONObject attributes = getAttributes();
+//        jsonObject.put("attributes", attributes);
+//
+//      }
 
 
       PGobject object = new PGobject();
       object.setType("jsonb");
-      object.setValue(jsonObject.toJSONString());
+      object.setValue(toInsert.toJson());
 
       insertStatement.setObject(2, object);
       insertStatement.setString(1, key);
