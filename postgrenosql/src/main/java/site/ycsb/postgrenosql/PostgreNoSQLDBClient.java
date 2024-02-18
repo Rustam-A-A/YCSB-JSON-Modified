@@ -80,7 +80,10 @@ public class PostgreNoSQLDBClient extends DB {
   public static final String PRIMARY_KEY = "YCSB_KEY";
 
   /** The element entity in the document. */
-  public static final String BUSINESS_ID = "field9";
+  public static final String ABSTRACT = "Abstract";
+
+  /** The element entity in the document. */
+  public static final String ATTRIBUTES = "attributes";
 
   /** The field name prefix in the table. */
   public static final String COLUMN_NAME = "YCSB_VALUE";
@@ -205,7 +208,9 @@ public class PostgreNoSQLDBClient extends DB {
       }
       readStatement.setString(1, entity);
       ResultSet resultSet = readStatement.executeQuery();
+//      System.out.println("READ READ READ READ: " + entity);
       if (!resultSet.next()) {
+//        LOG.info("no read result: {}", entity);
         resultSet.close();
         return  Status.NOT_FOUND;
       }
@@ -216,16 +221,18 @@ public class PostgreNoSQLDBClient extends DB {
             String field = resultSet.getString(2);
             String value = resultSet.getString(3);
             result.put(field, new StringByteIterator(value));
+//            System.out.println("RESULT WAS PUT WHEN FIELD == NULL");
           }while (resultSet.next());
         } else {
           for (String field : fields) {
             String value = resultSet.getString(field);
             result.put(field, new StringByteIterator(value));
+//            System.out.println("RESULT WAS PUT WHEN FIELD != NULL");
           }
         }
       }
       resultSet.close();
-      LOG.info("read: {}", entity);
+//      LOG.info("read: {}", entity);
       return Status.OK;
 
     } catch (SQLException e) {
@@ -379,10 +386,11 @@ public class PostgreNoSQLDBClient extends DB {
 
       for (Map.Entry<String, ByteIterator> entry : values.entrySet()) {
         if(entry.getKey().equals("field9")) {
-          attributes.append("abstract", entry.getValue().toString());
+          attributes.append("Abstract", entry.getValue().toString());
         }
       }
       toInsert.put("attributes", attributes);
+//      toInsert.put("field0", "OK");
 
 
 
@@ -539,9 +547,13 @@ public class PostgreNoSQLDBClient extends DB {
     read.append(" FROM " + readType.getTableName());
     read.append(" WHERE ");
     read.append(COLUMN_NAME);
+    read.append("->");
+    read.append("'");
+    read.append(ATTRIBUTES);
+    read.append("'");
     read.append("->>");
     read.append("'");
-    read.append(BUSINESS_ID);
+    read.append(ABSTRACT);
     read.append("'");
     read.append(" = ");
     read.append("?");

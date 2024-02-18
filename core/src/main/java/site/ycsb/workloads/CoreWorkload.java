@@ -190,22 +190,22 @@ public class CoreWorkload extends Workload {
   /**
    * The minimal value of the longitude.
    */
-  public static final double MINIMAL_VALUE_OF_LONGITUDE = -112.320;
+  public static final double MINIMAL_VALUE_OF_LONGITUDE = -112.5;
 
   /**
    * The maximal value of the longitude.
    */
-  public static final double MAXIMAL_VALUE_OF_LONGITUDE = -111.880;
+  public static final double MAXIMAL_VALUE_OF_LONGITUDE = -111.5;
 
   /**
    * The minimal value of the latitude.
    */
-  public static final double MINIMAL_VALUE_OF_LATITUDE = 33.238572;
+  public static final double MINIMAL_VALUE_OF_LATITUDE = 33.0;
 
   /**
    * The minimal value of the latitude.
    */
-  public static final double MAXIMAL_VALUE_OF_LATITUDE = 33.938572;
+  public static final double MAXIMAL_VALUE_OF_LATITUDE = 33.90;
 
 
 
@@ -879,7 +879,6 @@ public class CoreWorkload extends Workload {
       String fieldname = fieldnames.get(fieldchooser.nextValue().intValue());
 
       System.out.println("THIS FIELD WAS CHOSEN RANDOMLY: " + fieldname);
-      System.err.println("THIS FIELD WAS CHOSEN RANDOMLY: " + fieldname);
 
       fields = new HashSet<String>();
       fields.add(fieldname);

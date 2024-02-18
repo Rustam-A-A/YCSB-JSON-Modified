@@ -1,0 +1,33 @@
+//bin/java  -classpath /home/rustam/IdeaProjects/YCSB-JSON-III/conf:/home/rustam/IdeaProjects/YCSB-JSON-III/core/target/core-0.18.0-SNAPSHOT.jar:/home/rustam/IdeaProjects/YCSB-JSON-III/core/target/dependency/HdrHistogram-2.1.4.jar:/home/rustam/IdeaProjects/YCSB-JSON-III/core/target/dependency/htrace-core4-4.1.0-incubating.jar:/home/rustam/IdeaProjects/YCSB-JSON-III/core/target/dependency/jackson-annotations-2.15.2.jar:/home/rustam/IdeaProjects/YCSB-JSON-III/core/target/dependency/jackson-core-2.15.2.jar:/home/rustam/IdeaProjects/YCSB-JSON-III/core/target/dependency/jackson-core-asl-1.9.4.jar:/home/rustam/IdeaProjects/YCSB-JSON-III/core/target/dependency/jackson-databind-2.15.2.jar:/home/rustam/IdeaProjects/YCSB-JSON-III/core/target/dependency/jackson-mapper-asl-1.9.4.jar:/home/rustam/IdeaProjects/YCSB-JSON-III/postgrenosql/conf:/home/rustam/IdeaProjects/YCSB-JSON-III/postgrenosql/target/postgrenosql-binding-0.18.0-SNAPSHOT.jar:/home/rustam/IdeaProjects/YCSB-JSON-III/postgrenosql/target/dependency/checker-qual-3.31.0.jar:/home/rustam/IdeaProjects/YCSB-JSON-III/postgrenosql/target/dependency/jackson-annotations-2.15.2.jar:/home/rustam/IdeaProjects/YCSB-JSON-III/postgrenosql/target/dependency/jackson-core-2.15.2.jar:/home/rustam/IdeaProjects/YCSB-JSON-III/postgrenosql/target/dependency/jackson-databind-2.15.2.jar:/home/rustam/IdeaProjects/YCSB-JSON-III/postgrenosql/target/dependency/json-simple-1.1.1.jar:/home/rustam/IdeaProjects/YCSB-JSON-III/postgrenosql/target/dependency/mongo-java-driver-3.11.0.jar:/home/rustam/IdeaProjects/YCSB-JSON-III/postgrenosql/target/dependency/postgresql-42.6.0.jar:/home/rustam/IdeaProjects/YCSB-JSON-III/postgrenosql/target/dependency/slf4j-api-1.7.25.jar:/home/rustam/IdeaProjects/YCSB-JSON-III/postgrenosql/target/dependency/slf4j-simple-1.7.13.jar site.ycsb.Client -t -db site.ycsb.postgrenosql.PostgreNoSQLDBClient -P ./workloads/workloade -threads 16 -p recordcount=15585 -P ./postgrenosql/conf/postgrenosql.properties
+mongo client connection created with mongodb://localhost:27017/ycsb?w=1
+[OVERALL], RunTime(ms), 7818
+[OVERALL], Throughput(ops/sec), 127.90995139421847
+[TOTAL_GCS_G1_Young_Generation], Count, 3
+[TOTAL_GC_TIME_G1_Young_Generation], Time(ms), 7
+[TOTAL_GC_TIME_%_G1_Young_Generation], Time(%), 0.08953696597595293
+[TOTAL_GCS_G1_Old_Generation], Count, 0
+[TOTAL_GC_TIME_G1_Old_Generation], Time(ms), 0
+[TOTAL_GC_TIME_%_G1_Old_Generation], Time(%), 0.0
+[TOTAL_GCs], Count, 3
+[TOTAL_GC_TIME], Time(ms), 7
+[TOTAL_GC_TIME_%], Time(%), 0.08953696597595293
+[READ], Operations, 57
+[READ], AverageLatency(us), 113500.49122807017
+[READ], MinLatency(us), 2814
+[READ], MaxLatency(us), 183679
+[READ], 95thPercentileLatency(us), 172287
+[READ], 99thPercentileLatency(us), 177919
+[READ], Return=OK, 57
+[CLEANUP], Operations, 16
+[CLEANUP], AverageLatency(us), 117.4375
+[CLEANUP], MinLatency(us), 1
+[CLEANUP], MaxLatency(us), 1849
+[CLEANUP], 95thPercentileLatency(us), 9
+[CLEANUP], 99thPercentileLatency(us), 1849
+[SCAN], Operations, 943
+[SCAN], AverageLatency(us), 116237.42099681866
+[SCAN], MinLatency(us), 5356
+[SCAN], MaxLatency(us), 222207
+[SCAN], 95thPercentileLatency(us), 180991
+[SCAN], 99thPercentileLatency(us), 201727
+[SCAN], Return=OK, 943

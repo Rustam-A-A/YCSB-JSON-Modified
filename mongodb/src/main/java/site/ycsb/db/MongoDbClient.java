@@ -290,6 +290,14 @@ public class MongoDbClient extends DB {
       toInsert.remove("_id");
       toInsert.append("_id", key);
 
+      Document attributes = (Document) toInsert.get("attributes");
+      for (Map.Entry<String, ByteIterator> entry : values.entrySet()) {
+        if(entry.getKey().equals("field9")) {
+          attributes.append("Abstract", entry.getValue().toString());
+        }
+      }
+      toInsert.put("attributes", attributes);
+
 
 
 
@@ -451,7 +459,7 @@ public class MongoDbClient extends DB {
     try {
       MongoCollection<Document> collection = database.getCollection(table);
 //      Document query = new Document("_id", key);
-      Document query = new Document("attributes.Parking.garage" , true);
+      Document query = new Document("attributes.Abstract" , key);
 
 
       //db.usertable.find({"categories" : "Sports Wear", "attributes.Parking.garage" : true})
